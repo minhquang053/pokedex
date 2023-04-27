@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func getLocations(purl *string) (RespLocationAreas, error) {
+func GetLocations(purl *string) (RespLocationAreas, error) {
 	url := baseURL + "/location-area"
 	if purl != nil {
 		url = *purl
