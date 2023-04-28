@@ -5,14 +5,27 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
+
+	"github.com/minhquang053/pokedex/internal/pokeapi"
+	"github.com/minhquang053/pokedex/internal/pokecache"
 )
 
 type config struct {
+	Pokedex  map[string]pokeapi.Pokemon
+	Cache    *pokecache.Cache
 	Next     *string
 	Previous *string
 }
 
+func initConfig(cf *config) {
+	cache := pokecache.NewCache(time.Minute * 5)
+	cf.Cache = &cache
+	cf.Pokedex = make(map[string]pokeapi.Pokemon)
+}
+
 func startRepl(cf *config) {
+	initConfig(cf)
 	reader := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("Pokedex > ")
@@ -24,10 +37,14 @@ func startRepl(cf *config) {
 		}
 
 		commandName := words[0]
+		args := []string{}
+		if len(words) > 1 {
+			args = words[1:]
+		}
 
 		command, exists := getCommands()[commandName]
 		if exists {
-			err := command.callback(cf)
+			err := command.callback(cf, args...)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -48,7 +65,7 @@ func cleanInput(text string) []string {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(*config) error
+	callback    func(*config, ...string) error
 }
 
 func getCommands() map[string]cliCommand {
@@ -68,10 +85,30 @@ func getCommands() map[string]cliCommand {
 			description: "Get the previous page of locations",
 			callback:    commandMapb,
 		},
+		"explore": {
+			name:        "explore <location_area_name>",
+			description: "See a list of all the Pokemon in the area",
+			callback:    commandExplore,
+		},
 		"exit": {
 			name:        "exit",
 			description: "Exit the Pokedex",
 			callback:    commandExit,
+		},
+		"catch": {
+			name:        "catch <pokemon_name>",
+			description: "Catch a Pokemon",
+			callback:    commandCatch,
+		},
+		"inspect": {
+			name:        "inspect <pokemon_name>",
+			description: "See details about a Pokemon",
+			callback:    commandInspect,
+		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Show all Pokemon caught by user",
+			callback:    commandPokedex,
 		},
 	}
 }
